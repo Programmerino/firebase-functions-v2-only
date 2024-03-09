@@ -26,23 +26,11 @@
   "bin": {
     "firebase-functions": "./lib/bin/firebase-functions.js"
   },
-  "types": "lib/v1/index.d.ts",
+  "types": "lib/v2/index.d.ts",
   "exports": {
-    ".": "./lib/v1/index.js",
     "./logger/compat": "./lib/logger/compat.js",
     "./logger": "./lib/logger/index.js",
     "./params": "./lib/params/index.js",
-    "./v1": "./lib/v1/index.js",
-    "./v1/analytics": "./lib/v1/providers/analytics.js",
-    "./v1/auth": "./lib/v1/providers/auth.js",
-    "./v1/database": "./lib/v1/providers/database.js",
-    "./v1/firestore": "./lib/v1/providers/firestore.js",
-    "./v1/https": "./lib/v1/providers/https.js",
-    "./v1/pubsub": "./lib/v1/providers/pubsub.js",
-    "./v1/remoteConfig": "./lib/v1/providers/remoteConfig.js",
-    "./v1/storage": "./lib/v1/providers/storage.js",
-    "./v1/tasks": "./lib/v1/providers/tasks.js",
-    "./v1/testLab": "./lib/v1/providers/testLab.js",
     "./v2": "./lib/v2/index.js",
     "./v2/core": "./lib/v2/core.js",
     "./v2/options": "./lib/v2/options.js",
@@ -73,39 +61,6 @@
       ],
       "params": [
         "lib/params"
-      ],
-      "v1": [
-        "lib/v1"
-      ],
-      "v1/analytics": [
-        "lib/v1/providers/analytics"
-      ],
-      "v1/auth": [
-        "lib/v1/providers/auth"
-      ],
-      "v1/database": [
-        "lib/v1/privders/database"
-      ],
-      "v1/firestore": [
-        "lib/v1/providers/firestore"
-      ],
-      "v1/https": [
-        "./lib/v1/providers/https"
-      ],
-      "v1/pubsub": [
-        "lib/v1/providers/pubsub"
-      ],
-      "v1/remoteConfig": [
-        "lib/v1/providers/remoteConfig"
-      ],
-      "v1/storage": [
-        "lib/v1/providers/storage"
-      ],
-      "v1/tasks": [
-        "lib/v1/providers/tasks"
-      ],
-      "v1/testLab": [
-        "lib/v1/providers/testLab"
       ],
       "v2": [
         "lib/v2"

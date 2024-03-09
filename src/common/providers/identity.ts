@@ -23,12 +23,162 @@
 import * as express from "express";
 import * as auth from "firebase-admin/auth";
 import * as logger from "../../logger";
-import { EventContext } from "../../v1/cloud-functions";
 import { getApp } from "../app";
 import { isDebugFeatureEnabled } from "../debug";
 import { HttpsError, unsafeDecodeToken } from "./https";
 
 export { HttpsError };
+
+/**
+ * Resource is a standard format for defining a resource
+ * (google.rpc.context.AttributeContext.Resource). In Cloud Functions, it is the
+ * resource that triggered the function - such as a storage bucket.
+ */
+export interface Resource {
+  /** The name of the service that this resource belongs to. */
+  service: string;
+  /**
+   * The stable identifier (name) of a resource on the service.
+   * A resource can be logically identified as "//{resource.service}/{resource.name}"
+   */
+  name: string;
+  /**
+   * The type of the resource. The syntax is platform-specific because different platforms define their resources differently.
+   * For Google APIs, the type format must be "{service}/{kind}"
+   */
+  type?: string;
+  /** Map of Resource's labels. */
+  labels?: { [tag: string]: string };
+}
+
+/**
+ * The context in which an event occurred.
+ *
+ * @remarks
+ * An EventContext describes:
+ * - The time an event occurred.
+ * - A unique identifier of the event.
+ * - The resource on which the event occurred, if applicable.
+ * - Authorization of the request that triggered the event, if applicable and
+ *   available.
+ */
+export interface EventContext<Params = Record<string, string>> {
+  /**
+   * Authentication information for the user that triggered the function.
+   *
+   * @remarks
+   * This object contains `uid` and `token` properties for authenticated users.
+   * For more detail including token keys, see the
+   * {@link https://firebase.google.com/docs/reference/rules/rules#properties | security rules reference}.
+   *
+   * This field is only populated for Realtime Database triggers and Callable
+   * functions. For an unauthenticated user, this field is null. For Firebase
+   * admin users and event types that do not provide user information, this field
+   * does not exist.
+   */
+  auth?: {
+    token: object;
+    uid: string;
+  };
+
+  /**
+   * The level of permissions for a user.
+   *
+   * @remarks
+   * Valid values are:
+   *
+   * - `ADMIN`: Developer user or user authenticated via a service account.
+   *
+   * - `USER`: Known user.
+   *
+   * - `UNAUTHENTICATED`: Unauthenticated action
+   *
+   * - `null`: For event types that do not provide user information (all except
+   *   Realtime Database).
+   */
+  authType?: "ADMIN" | "USER" | "UNAUTHENTICATED";
+
+  /**
+   * The event’s unique identifier.
+   */
+  eventId: string;
+
+  /**
+   * Type of event.
+   *
+   * @remarks
+   * Possible values are:
+   *
+   * - `google.analytics.event.log`
+   *
+   * - `google.firebase.auth.user.create`
+   *
+   * - `google.firebase.auth.user.delete`
+   *
+   * - `google.firebase.database.ref.write`
+   *
+   * - `google.firebase.database.ref.create`
+   *
+   * - `google.firebase.database.ref.update`
+   *
+   * - `google.firebase.database.ref.delete`
+   *
+   * - `google.firestore.document.write`
+   *
+   * - `google.firestore.document.create`
+   *
+   * - `google.firestore.document.update`
+   *
+   * - `google.firestore.document.delete`
+   *
+   * - `google.pubsub.topic.publish`
+   *
+   * - `google.firebase.remoteconfig.update`
+   *
+   * - `google.storage.object.finalize`
+   *
+   * - `google.storage.object.archive`
+   *
+   * - `google.storage.object.delete`
+   *
+   * - `google.storage.object.metadataUpdate`
+   *
+   * - `google.testing.testMatrix.complete`
+   */
+  eventType: string;
+
+  /**
+   * An object containing the values of the wildcards in the `path` parameter
+   * provided to the {@link fireabase-functions.v1.database#ref | `ref()`} method for a Realtime Database trigger.
+   */
+  params: Params;
+
+  /**
+   * The resource that emitted the event.
+   *
+   * @remarks
+   * Valid values are:
+   *
+   * Analytics: `projects/<projectId>/events/<analyticsEventType>`
+   *
+   * Realtime Database: `projects/_/instances/<databaseInstance>/refs/<databasePath>`
+   *
+   * Storage: `projects/_/buckets/<bucketName>/objects/<fileName>#<generation>`
+   *
+   * Authentication: `projects/<projectId>`
+   *
+   * Pub/Sub: `projects/<projectId>/topics/<topicName>`
+   *
+   * Because Realtime Database instances and Cloud Storage buckets are globally
+   * unique and not tied to the project, their resources start with `projects/_`.
+   * Underscore is not a valid project name.
+   */
+  resource: Resource;
+  /**
+   * Timestamp for the event as an {@link https://www.ietf.org/rfc/rfc3339.txt | RFC 3339} string.
+   */
+  timestamp: string;
+}
 
 const DISALLOWED_CUSTOM_CLAIMS = [
   "acr",
@@ -78,7 +228,7 @@ export type UserInfo = auth.UserInfo;
  * Helper class to create the user metadata in a `UserRecord` object.
  */
 export class UserRecordMetadata implements auth.UserMetadata {
-  constructor(public creationTime: string, public lastSignInTime: string) {}
+  constructor(public creationTime: string, public lastSignInTime: string) { }
 
   /** Returns a plain JavaScript object with the properties of UserRecordMetadata. */
   toJSON(): AuthUserMetadata {
@@ -854,8 +1004,8 @@ export function wrapHandler(eventType: AuthBlockingEventType, handler: HandlerV1
       const decodedPayload: DecodedPayload = isDebugFeatureEnabled("skipTokenVerification")
         ? unsafeDecodeAuthBlockingToken(req.body.data.jwt)
         : handler.length === 2
-        ? await auth.getAuth(getApp())._verifyAuthBlockingToken(req.body.data.jwt)
-        : await auth.getAuth(getApp())._verifyAuthBlockingToken(req.body.data.jwt, "run.app");
+          ? await auth.getAuth(getApp())._verifyAuthBlockingToken(req.body.data.jwt)
+          : await auth.getAuth(getApp())._verifyAuthBlockingToken(req.body.data.jwt, "run.app");
       const authUserRecord = parseAuthUserRecord(decodedPayload.user_record);
       const authEventContext = parseAuthEventContext(decodedPayload, projectId);
 

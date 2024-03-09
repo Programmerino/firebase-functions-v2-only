@@ -1,18 +1,21 @@
 {
   "compilerOptions": {
     "declaration": true,
-    "lib": ["es2019"],
+    "lib": [
+      "es2019"
+    ],
     "module": "commonjs",
     "noImplicitAny": false,
     "noUnusedLocals": true,
     "outDir": "lib",
     "stripInternal": true,
     "target": "es2019",
-    "typeRoots": ["./node_modules/@types"]
+    "typeRoots": [
+      "./node_modules/@types"
+    ]
   },
   "files": [
     "./src/types/global.d.ts",
-    "./src/v1/index.ts",
     "./src/logger/index.ts",
     "./src/logger/compat.ts",
     "./src/v2/index.ts",

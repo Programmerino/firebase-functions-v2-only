@@ -34,15 +34,30 @@ import {
   HttpsError,
   wrapHandler,
 } from "../../common/providers/identity";
-import { BlockingFunction } from "../../v1/cloud-functions";
 import { wrapTraceContext } from "../trace";
 import { Expression } from "../../params";
-import { initV2Endpoint } from "../../runtime/manifest";
+import { ManifestEndpoint, ManifestRequiredAPI, initV2Endpoint } from "../../runtime/manifest";
 import * as options from "../options";
 import { SecretParam } from "../../params/types";
 import { withInit } from "../../common/onInit";
+import { Request, Response } from "express";
+import { TriggerAnnotation } from "../core";
 
 export { AuthUserRecord, AuthBlockingEvent, HttpsError };
+
+export interface BlockingFunction {
+  /** @public */
+  (req: Request, resp: Response): void | Promise<void>;
+
+  /** @alpha */
+  __trigger: TriggerAnnotation;
+
+  /** @alpha */
+  __endpoint: ManifestEndpoint;
+
+  /** @alpha */
+  __requiredAPIs?: ManifestRequiredAPI[];
+}
 
 /** @hidden Internally used when parsing the options. */
 interface InternalOptions {
@@ -192,8 +207,8 @@ export function beforeUserCreated(
   optsOrHandler:
     | BlockingOptions
     | ((
-        event: AuthBlockingEvent
-      ) => BeforeCreateResponse | Promise<BeforeCreateResponse> | void | Promise<void>),
+      event: AuthBlockingEvent
+    ) => BeforeCreateResponse | Promise<BeforeCreateResponse> | void | Promise<void>),
   handler?: (
     event: AuthBlockingEvent
   ) => BeforeCreateResponse | Promise<BeforeCreateResponse> | void | Promise<void>
@@ -232,8 +247,8 @@ export function beforeUserSignedIn(
   optsOrHandler:
     | BlockingOptions
     | ((
-        event: AuthBlockingEvent
-      ) => BeforeSignInResponse | Promise<BeforeSignInResponse> | void | Promise<void>),
+      event: AuthBlockingEvent
+    ) => BeforeSignInResponse | Promise<BeforeSignInResponse> | void | Promise<void>),
   handler?: (
     event: AuthBlockingEvent
   ) => BeforeSignInResponse | Promise<BeforeSignInResponse> | void | Promise<void>
@@ -247,14 +262,14 @@ export function beforeOperation(
   optsOrHandler:
     | BlockingOptions
     | ((
-        event: AuthBlockingEvent
-      ) =>
-        | BeforeCreateResponse
-        | BeforeSignInResponse
-        | void
-        | Promise<BeforeCreateResponse>
-        | Promise<BeforeSignInResponse>
-        | Promise<void>),
+      event: AuthBlockingEvent
+    ) =>
+      | BeforeCreateResponse
+      | BeforeSignInResponse
+      | void
+      | Promise<BeforeCreateResponse>
+      | Promise<BeforeSignInResponse>
+      | Promise<void>),
   handler: (
     event: AuthBlockingEvent
   ) =>
